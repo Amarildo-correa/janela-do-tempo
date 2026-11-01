@@ -110,7 +110,9 @@ export const size = {
   headerH: px(80),
   heroH: px(356),
   detailsW: px(560),
-  cardW: px(198.5),
+  // Com o vão de 32 px, o passo do rail fica em 218,5 px: 8 cards cabem na
+  // largura útil e o 9º aparece cortado (76 px) na borda direita.
+  cardW: px(186.5),
   hourCardH: px(186),
   dayCardH: px(244),
   icon: {
