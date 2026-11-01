@@ -1,6 +1,6 @@
 import React, {memo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {useCardState} from '../focus';
+import {useCardFocused} from '../focus';
 import {color, size, space, type} from '../theme';
 import {degrees} from '../weather/format';
 import {Day, dayA11y} from '../weather/forecast';
@@ -12,7 +12,7 @@ type Props = {item: Day; index: number};
 // Card de "Próximos dias", dentro de um item do Vega Carousel. Em foco, tudo
 // fica amarelo, inclusive a data e a máxima.
 export const DayCard = memo(function DayCard({item, index}: Props) {
-  const {focused, pressed} = useCardState('days', index);
+  const focused = useCardFocused('days', index);
   const s = focused ? focusedStyles : styles;
 
   return (
@@ -20,7 +20,6 @@ export const DayCard = memo(function DayCard({item, index}: Props) {
       width={size.cardW}
       height={size.dayCardH}
       focused={focused}
-      pressed={pressed}
       label={dayA11y(item)}>
       <View style={styles.when}>
         <Text style={s.day}>{item.label}</Text>

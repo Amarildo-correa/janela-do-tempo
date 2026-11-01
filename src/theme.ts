@@ -125,7 +125,8 @@ export const size = {
 export const focus = {
   borderWidth: px(4), // outset
   scale: 1.06,
-  // Escala enquanto o OK está apertado (cards e botões).
+  // Escala do botão enquanto o OK está apertado (os cards não encolhem:
+  // não abrem nenhuma tela).
   pressedScale: 0.94,
   duration: 160, // ms
   pressDuration: 120, // ms

@@ -7,7 +7,6 @@ type Props = {
   width: number;
   height: number;
   focused: boolean;
-  pressed: boolean;
   label: string;
   children: React.ReactNode;
 };
@@ -16,28 +15,27 @@ type Props = {
 //
 // O item tem uma folga (focus.room) em volta do card; a camada de foco (fundo
 // escuro + anel amarelo de 4 px por fora) cresce dentro dela, a partir do
-// centro, sem empurrar nem cobrir os cards vizinhos. Ao apertar OK o card
-// inteiro encolhe, também a partir do centro.
+// centro, sem empurrar nem cobrir os cards vizinhos.
 export const FocusCard = memo(function FocusCard({
   width,
   height,
   focused,
-  pressed,
   label,
   children,
 }: Props) {
-  const {layerStyle, pressStyle} = useFocusAnimation(focused, pressed);
+  // Sem animação de toque: os cards não abrem nenhuma tela.
+  const {layerStyle} = useFocusAnimation(focused, false);
 
   return (
     <View style={styles.room}>
-      <Animated.View
-        style={[styles.card, {width, height}, pressStyle]}
+      <View
+        style={[styles.card, {width, height}]}
         accessible
         aria-label={label}>
         <View style={[styles.rest, focused && styles.restHidden]} />
         <Animated.View style={[styles.layer, layerStyle]} />
         {children}
-      </Animated.View>
+      </View>
     </View>
   );
 });

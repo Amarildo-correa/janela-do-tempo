@@ -80,9 +80,10 @@ export function Rail<T extends {key: string}>({
   );
 }
 
-// O card desenha a própria camada de foco e o toque (FocusCard), a partir
-// do centro; o Carousel não escala nem desenha borda. O vão visível entre os
-// cards é de 32 px: o item tem focus.room de folga de cada lado.
+// O card desenha a própria camada de foco (FocusCard), a partir do centro;
+// o Carousel não escala nem desenha borda, nem no toque (os cards não abrem
+// nenhuma tela). O vão visível entre os cards é de 32 px: o item tem
+// focus.room de folga de cada lado.
 const itemStyle = {
   itemPadding: space.s32 - focus.room * 2,
   selectedItemScaleFactor: 1,

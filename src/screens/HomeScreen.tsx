@@ -15,7 +15,6 @@ import {
   RailId,
   useFocusRestore,
   useRegionFocus,
-  useSelectPressed,
 } from '../focus';
 import {useLaunchMetrics} from '../launch';
 import type {RootStackParamList} from '../navigation';
@@ -110,7 +109,6 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   const {region, setRegion} = useRegionFocus('days', isFocused);
   const activeRail: RailId | null = region === 'search' ? null : region;
   const onSearchFocused = useCallback(() => setRegion('search'), [setRegion]);
-  const pressed = useSelectPressed(isFocused && activeRail != null);
 
   // Foco é seleção: o card que ganha foco passa a ser o assunto do hero.
   const onSelect = useCallback((rail: RailId, index: number) => {
@@ -146,10 +144,7 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   );
 
   return (
-    <RailFocusProvider
-      activeRail={activeRail}
-      selected={selected}
-      pressed={pressed}>
+    <RailFocusProvider activeRail={activeRail} selected={selected}>
       <View style={styles.page}>
         <View style={styles.top}>
           <View style={styles.topLeft}>
