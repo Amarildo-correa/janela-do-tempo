@@ -10,6 +10,9 @@ import {color, focus, space, type} from '../theme';
 
 type Props<T extends {key: string}> = {
   id: RailId;
+  // Identifica os dados do rail (ex.: o dia das horas); entra no uniqueId do
+  // Carousel para ele não reciclar itens de outra lista.
+  listKey?: string;
   title: string;
   items: T[];
   itemHeight: number;
@@ -23,6 +26,7 @@ type Props<T extends {key: string}> = {
 // reciclagem.
 export function Rail<T extends {key: string}>({
   id,
+  listKey,
   title,
   items,
   itemHeight,
@@ -60,7 +64,7 @@ export function Rail<T extends {key: string}>({
     <View>
       <Text style={styles.title}>{title}</Text>
       <Carousel
-        uniqueId={`rail-${id}`}
+        uniqueId={listKey ? `rail-${id}-${listKey}` : `rail-${id}`}
         testID={`rail-${id}`}
         dataAdapter={dataAdapter}
         renderItem={renderItem}

@@ -86,29 +86,46 @@ describe('App', () => {
     expect(screen.getByText('Segunda, 2 nov')).toBeTruthy();
     expect(screen.getByText('Máxima prevista')).toBeTruthy();
 
-    // Subir para o rail de horas mostra o card em que ele estava ("Agora")
-    // e passa o destaque amarelo para lá.
+    // O rail de horas passa a mostrar as 24 horas de segunda.
+    expect(screen.getByText('Horas de segunda')).toBeTruthy();
+    expect(screen.queryByText('Próximas horas')).toBeNull();
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(screen.queryByText('Agora')).toBeNull();
+
+    // Subir para o rail de horas mostra a primeira hora de segunda e passa o
+    // destaque amarelo (ícone sólido) para lá.
     pressKey('up');
-    expect(
-      screen.getByLabelText('Agora em Novo Hamburgo, 27°, Sol entre nuvens'),
-    ).toBeTruthy();
-    expect(screen.getAllByTestId('icon-partly-sunny').length).toBe(1);
-    expect(screen.queryByTestId('icon-cloudy')).toBeNull();
+    expect(screen.getByText('Amanhã às 00:00')).toBeTruthy();
+    expect(screen.getAllByTestId('icon-cloudy').length).toBe(1);
 
     const hours = screen.getByTestId('rail-hours');
     act(() =>
       hours.props.onSelectionChanged({
-        selectedIndex: 1,
-        renderedRange: {start: 0, end: 9},
+        selectedIndex: 14,
+        renderedRange: {start: 10, end: 20},
       }),
     );
-    expect(screen.getByText('Hoje às 16:00')).toBeTruthy();
-    expect(screen.getByText('Previsão para 16:00')).toBeTruthy();
+    expect(screen.getByText('Amanhã às 14:00')).toBeTruthy();
+    expect(screen.getByText('Previsão para 14:00')).toBeTruthy();
 
     // Em Buscar cidade nenhum card fica amarelo e o hero não muda.
     pressKey('up');
-    expect(screen.queryByTestId('icon-partly-sunny')).toBeNull();
-    expect(screen.getByText('Hoje às 16:00')).toBeTruthy();
+    expect(screen.queryByTestId('icon-cloudy')).toBeNull();
+    expect(screen.getByText('Amanhã às 14:00')).toBeTruthy();
+
+    // De volta a hoje: "Próximas horas", a partir de "Agora".
+    pressKey('down');
+    pressKey('down');
+    act(() =>
+      screen.getByTestId('rail-days').props.onSelectionChanged({
+        selectedIndex: 0,
+        renderedRange: {start: 0, end: 9},
+      }),
+    );
+    expect(screen.getByText('Próximas horas')).toBeTruthy();
+    expect(
+      screen.getByLabelText('Agora, Sol entre nuvens, 27 graus'),
+    ).toBeTruthy();
     finish();
   });
 

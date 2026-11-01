@@ -8,14 +8,25 @@ import {nextRegion} from '../src/focus/useRegionFocus';
 const forecast = parseForecast(fixture);
 
 describe('parseForecast', () => {
-  it('começa as horas em "Agora" com os valores atuais', () => {
-    expect(forecast.hours).toHaveLength(24);
-    const [now, next] = forecast.hours;
+  it('hoje começa em "Agora" e vai até 23:00', () => {
+    const today = forecast.hoursByDay[0];
+    expect(today).toHaveLength(9);
+    expect(today[today.length - 1].label).toBe('23:00');
+    const [now, next] = today;
     expect(now.label).toBe('Agora');
     expect(now.temp).toBe(27.3);
     expect(now.condition.label).toBe('Sol entre nuvens');
     expect(next.label).toBe('16:00');
     expect(next.temp).toBe(26.6);
+  });
+
+  it('os outros dias têm as 24 horas, de 00:00 a 23:00', () => {
+    const monday = forecast.hoursByDay[1];
+    expect(monday).toHaveLength(24);
+    expect(monday[0].label).toBe('00:00');
+    expect(monday[0].temp).toBe(18.6);
+    expect(monday[23].label).toBe('23:00');
+    expect(forecast.hoursByDay).toHaveLength(10);
   });
 
   it('nomeia os dias como Hoje, Seg, Ter…', () => {
@@ -29,7 +40,7 @@ describe('parseForecast', () => {
   });
 
   it('escreve os rótulos de acessibilidade completos', () => {
-    expect(hourA11y(forecast.hours[0])).toBe(
+    expect(hourA11y(forecast.hoursByDay[0][0])).toBe(
       'Agora, Sol entre nuvens, 27 graus',
     );
     expect(dayA11y(forecast.days[1])).toBe(
@@ -48,10 +59,17 @@ describe('heroFor', () => {
   });
 
   it('uma hora mostra a previsão daquela hora', () => {
-    const hero = heroFor(forecast, {kind: 'hour', index: 1});
+    const hero = heroFor(forecast, {kind: 'hour', day: 0, index: 1});
     expect(hero.when).toBe('Hoje às 16:00');
     expect(hero.support).toBe('Previsão para 16:00');
     expect([hero.temp, hero.rain, hero.humidity]).toEqual([26.6, 7, 62]);
+  });
+
+  it('a hora de outro dia diz o dia', () => {
+    const hero = heroFor(forecast, {kind: 'hour', day: 1, index: 14});
+    expect(hero.when).toBe('Amanhã às 14:00');
+    expect([hero.temp, hero.rain, hero.humidity]).toEqual([28.6, 52, 58]);
+    expect([hero.min, hero.max]).toEqual([17.6, 30.7]);
   });
 
   it('um dia mostra a máxima prevista', () => {

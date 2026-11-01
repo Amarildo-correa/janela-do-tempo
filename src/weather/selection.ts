@@ -3,8 +3,11 @@ import {dateShort, dayLong, hourLabel} from './format';
 import {Forecast} from './forecast';
 
 // O card selecionado num dos rails. O hero e os detalhes contam o tempo
-// desse momento ("foco é seleção").
-export type Selection = {kind: 'hour' | 'day'; index: number};
+// desse momento ("foco é seleção"). Uma hora é sempre de um dia: o rail de
+// horas mostra as horas do dia selecionado em Próximos dias.
+export type Selection =
+  | {kind: 'day'; index: number}
+  | {kind: 'hour'; day: number; index: number};
 
 // Foco inicial: o primeiro card de Próximos dias ("Hoje").
 export const INITIAL_SELECTION: Selection = {kind: 'day', index: 0};
@@ -23,12 +26,11 @@ export type HeroModel = {
 
 export function heroFor(forecast: Forecast, selection: Selection): HeroModel {
   const where = `em ${forecast.city}`;
-  const now = forecast.hours[0];
+  const now = forecast.hoursByDay[0]?.[0];
 
   // "Hoje" e "Agora" contam o tempo de agora, com a mínima e a máxima do dia.
   const showNow =
-    (selection.kind === 'day' && selection.index === 0) ||
-    (selection.kind === 'hour' && selection.index === 0);
+    selection.index === 0 && (selection.kind === 'day' || selection.day === 0);
 
   if (showNow && now) {
     const today = forecast.days[now.dayIndex];
@@ -46,7 +48,8 @@ export function heroFor(forecast: Forecast, selection: Selection): HeroModel {
   }
 
   if (selection.kind === 'hour') {
-    const hour = forecast.hours[selection.index] ?? now;
+    const hours = forecast.hoursByDay[selection.day] ?? [];
+    const hour = hours[selection.index] ?? hours[0] ?? now;
     const day = forecast.days[hour.dayIndex];
     const time = hourLabel(hour.time);
     const prefix =

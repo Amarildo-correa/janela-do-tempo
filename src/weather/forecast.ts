@@ -9,7 +9,6 @@ export const CITY = {
   timezone: 'America/Sao_Paulo',
 };
 
-export const HOURS_COUNT = 24;
 export const DAYS_COUNT = 10;
 
 export type Hour = {
@@ -37,8 +36,10 @@ export type Day = {
 
 export type Forecast = {
   city: string;
-  hours: Hour[];
   days: Day[];
+  // As horas de cada dia, no mesmo índice de `days`. Hoje começa em "Agora"
+  // e vai até 23:00; os outros dias têm as 24 horas.
+  hoursByDay: Hour[][];
 };
 
 // Resposta da Open-Meteo, só com os campos pedidos em forecastUrl().
@@ -82,52 +83,46 @@ export function forecastUrl(): string {
   return `https://api.open-meteo.com/v1/forecast?${query}`;
 }
 
-// Converte a resposta da Open-Meteo no modelo da tela: o primeiro card de
-// hora é "Agora" (valores atuais) e os seguintes são as próximas horas.
+// Converte a resposta da Open-Meteo no modelo da tela. O primeiro card de
+// hora de hoje é "Agora" (valores atuais); as horas que já passaram ficam de
+// fora.
 export function parseForecast(data: OpenMeteoResponse): Forecast {
   const {current, hourly, daily} = data;
   const today = current.time.slice(0, 10);
-  const dayIndexOf = (time: string) =>
-    Math.max(0, daily.time.indexOf(time.slice(0, 10)));
-
   const currentHour = current.time.slice(0, 13); // "2026-11-01T15"
-  const first = Math.max(
-    0,
-    hourly.time.findIndex((time) => time.startsWith(currentHour)),
-  );
+  const hoursByDay: Hour[][] = daily.time.map(() => []);
 
-  const hours: Hour[] = hourly.time
-    .slice(first, first + HOURS_COUNT)
-    .map((time, offset) => {
-      const i = first + offset;
-      if (offset === 0) {
-        return {
-          key: time,
-          time: current.time,
-          label: 'Agora',
-          temp: current.temperature_2m,
-          rain:
-            current.precipitation_probability ??
-            hourly.precipitation_probability[i],
-          humidity: current.relative_humidity_2m,
-          condition: describe(current.weather_code, current.is_day === 1),
-          dayIndex: dayIndexOf(time),
-        };
-      }
-      return {
+  hourly.time.forEach((time, i) => {
+    const dayIndex = daily.time.indexOf(time.slice(0, 10));
+    if (dayIndex < 0 || (dayIndex === 0 && time.slice(0, 13) < currentHour)) {
+      return;
+    }
+    if (time.startsWith(currentHour)) {
+      hoursByDay[dayIndex].push({
         key: time,
-        time,
-        label: hourLabel(time),
-        temp: hourly.temperature_2m[i],
-        rain: hourly.precipitation_probability[i],
-        humidity: hourly.relative_humidity_2m[i],
-        condition: describe(
-          hourly.weather_code[i] ?? 3,
-          hourly.is_day[i] === 1,
-        ),
-        dayIndex: dayIndexOf(time),
-      };
+        time: current.time,
+        label: 'Agora',
+        temp: current.temperature_2m,
+        rain:
+          current.precipitation_probability ??
+          hourly.precipitation_probability[i],
+        humidity: current.relative_humidity_2m,
+        condition: describe(current.weather_code, current.is_day === 1),
+        dayIndex,
+      });
+      return;
+    }
+    hoursByDay[dayIndex].push({
+      key: time,
+      time,
+      label: hourLabel(time),
+      temp: hourly.temperature_2m[i],
+      rain: hourly.precipitation_probability[i],
+      humidity: hourly.relative_humidity_2m[i],
+      condition: describe(hourly.weather_code[i] ?? 3, hourly.is_day[i] === 1),
+      dayIndex,
     });
+  });
 
   const days: Day[] = daily.time.map((date, i) => ({
     key: date,
@@ -141,7 +136,7 @@ export function parseForecast(data: OpenMeteoResponse): Forecast {
     condition: describe(daily.weather_code[i] ?? 3, true),
   }));
 
-  return {city: CITY.name, hours, days};
+  return {city: CITY.name, days, hoursByDay};
 }
 
 export async function fetchForecast(
@@ -152,6 +147,14 @@ export async function fetchForecast(
     throw new Error(`Open-Meteo respondeu ${response.status}`);
   }
   return parseForecast((await response.json()) as OpenMeteoResponse);
+}
+
+// Título do rail de horas para o dia selecionado.
+export function hoursTitle(forecast: Forecast, dayIndex: number): string {
+  if (dayIndex === 0) {
+    return 'Próximas horas';
+  }
+  return `Horas de ${dayLong(forecast.days[dayIndex].date).toLowerCase()}`;
 }
 
 // Rótulos completos para o leitor de tela (VoiceView).

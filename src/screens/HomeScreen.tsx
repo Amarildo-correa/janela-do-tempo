@@ -19,13 +19,22 @@ import {
 import {useLaunchMetrics} from '../launch';
 import type {RootStackParamList} from '../navigation';
 import {color, focus, px, size, space, type} from '../theme';
-import {Day, Forecast, Hour} from '../weather/forecast';
+import {Day, Forecast, Hour, hoursTitle} from '../weather/forecast';
 import {heroFor, INITIAL_SELECTION, Selection} from '../weather/selection';
 import {useForecast} from '../weather/useForecast';
 
 type Props = StackScreenProps<RootStackParamList, 'Home'>;
 
-const KIND: Record<RailId, Selection['kind']> = {hours: 'hour', days: 'day'};
+// O que o hero conta quando o rail tem o foco: o card selecionado nele. No
+// rail de horas, a hora é do dia selecionado em Próximos dias.
+function selectionOf(
+  rail: RailId,
+  selected: Record<RailId, number>,
+): Selection {
+  return rail === 'days'
+    ? {kind: 'day', index: selected.days}
+    : {kind: 'hour', day: selected.days, index: selected.hours};
+}
 
 export function HomeScreen({navigation}: Props) {
   const {state, retry} = useForecast();
@@ -111,21 +120,24 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   const onSearchFocused = useCallback(() => setRegion('search'), [setRegion]);
 
   // Foco é seleção: o card que ganha foco passa a ser o assunto do hero.
+  // Trocar de dia troca as horas do rail de cima, que volta à primeira hora.
   const onSelect = useCallback((rail: RailId, index: number) => {
-    setSelected((current) =>
-      current[rail] === index ? current : {...current, [rail]: index},
-    );
-    setSelection({kind: KIND[rail], index});
+    const current = selectedRef.current;
+    if (current[rail] === index) {
+      return;
+    }
+    const next =
+      rail === 'days' ? {days: index, hours: 0} : {...current, hours: index};
+    selectedRef.current = next;
+    setSelected(next);
+    setSelection(selectionOf(rail, next));
   }, []);
 
   // Ao entrar num rail, o hero passa para o card em que ele estava. Ao subir
   // para Buscar cidade, o hero mantém a última seleção.
   useEffect(() => {
     if (activeRail) {
-      setSelection({
-        kind: KIND[activeRail],
-        index: selectedRef.current[activeRail],
-      });
+      setSelection(selectionOf(activeRail, selectedRef.current));
     }
   }, [activeRail]);
 
@@ -168,9 +180,12 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
       </View>
       <View style={styles.rails}>
         <Rail
+          // Um rail novo para cada dia: o Carousel começa na primeira hora.
+          key={forecast.days[selected.days].key}
           id="hours"
-          title="Próximas horas"
-          items={forecast.hours}
+          listKey={forecast.days[selected.days].key}
+          title={hoursTitle(forecast, selected.days)}
+          items={forecast.hoursByDay[selected.days]}
           itemHeight={size.hourCardH}
           renderCard={renderHour}
           onSelect={onSelect}
