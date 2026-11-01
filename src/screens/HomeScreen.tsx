@@ -87,6 +87,15 @@ type WeatherProps = {
 
 // Tela com dados: hero e detalhes no topo, rails de horas e de dias embaixo.
 function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
+  // O rail de dias pega o foco só ao abrir o app. Se continuasse com
+  // hasPreferredFocus, ele tomaria o foco ao voltar da busca, que deve
+  // voltar para o botão Buscar cidade.
+  const [firstVisit, setFirstVisit] = useState(true);
+  const openSearch = useCallback(() => {
+    setFirstVisit(false);
+    onOpenSearch();
+  }, [onOpenSearch]);
+
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
   const [selected, setSelected] = useState<Record<RailId, number>>({
     hours: 0,
@@ -145,7 +154,7 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
                 label="Buscar cidade"
                 icon="search"
                 hint="Abre a busca de cidades"
-                onPress={onOpenSearch}
+                onPress={openSearch}
                 onFocused={onSearchFocused}
               />
             </View>
@@ -174,7 +183,7 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
           itemHeight={size.dayCardH}
           renderCard={renderDay}
           active={activeRail === 'days'}
-          hasPreferredFocus
+          hasPreferredFocus={firstVisit}
           onSelect={onSelect}
         />
       </View>
