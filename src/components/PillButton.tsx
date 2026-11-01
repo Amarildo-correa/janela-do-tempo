@@ -1,5 +1,6 @@
 import React, {forwardRef, useCallback, useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
+import {useFocusAnimation} from '../focus';
 import {color, focus, px, radius, size, space, type} from '../theme';
 import {UiIcon} from './WeatherIcon';
 
@@ -16,75 +17,85 @@ type Props = {
 
 // Botão em pílula de 80 px. Pressable do React Native, como manda o guia de
 // migração do kepler-ui-components 3.x (o Button de lá está obsoleto no RN
-// 0.83). Em foco: fundo escuro, borda amarela, texto amarelo e ícone mais
-// grosso.
+// 0.83). Mesma assinatura de foco dos cards: a camada (fundo escuro + anel
+// amarelo por fora) aparece e cresce a partir do centro, o texto fica
+// amarelo, o ícone engrossa, e o botão encolhe enquanto o OK está apertado.
 export const PillButton = forwardRef<View, Props>(function PillButton(
   {label, hint, icon, onPress, hasTVPreferredFocus, onFocused},
   ref,
 ) {
   const [focused, setFocused] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const {layerStyle, pressStyle} = useFocusAnimation(focused, pressed);
+
   const onFocus = useCallback(() => {
     setFocused(true);
     onFocused?.();
   }, [onFocused]);
-  const onBlur = useCallback(() => setFocused(false), []);
-  const fg = focused ? color.focus : color.ink;
-  // Encolhe enquanto o OK está apertado, como os cards do Vega Carousel.
-  const pressableStyle = useCallback(
-    ({pressed}: {pressed: boolean}) => [
-      focused ? styles.focused : styles.rest,
-      pressed && styles.pressed,
-    ],
-    [focused],
-  );
+  const onBlur = useCallback(() => {
+    setFocused(false);
+    setPressed(false);
+  }, []);
+  const onPressIn = useCallback(() => setPressed(true), []);
+  const onPressOut = useCallback(() => setPressed(false), []);
 
   return (
     <Pressable
       ref={ref}
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       onFocus={onFocus}
       onBlur={onBlur}
       hasTVPreferredFocus={hasTVPreferredFocus}
-      style={pressableStyle}
       role="button"
       aria-label={label}
       accessibilityHint={hint}>
-      {icon ? (
-        <UiIcon
-          name={icon}
-          solid={focused}
-          size={size.icon.button}
-          color={fg}
-        />
-      ) : null}
-      <Text style={focused ? styles.labelFocused : styles.label}>{label}</Text>
+      <Animated.View style={[styles.pill, pressStyle]}>
+        <View style={[styles.rest, focused && styles.restHidden]} />
+        <Animated.View style={[styles.layer, layerStyle]} />
+        {icon ? (
+          <UiIcon
+            name={icon}
+            solid={focused}
+            size={size.icon.button}
+            color={focused ? color.focus : color.ink}
+          />
+        ) : null}
+        <Text style={focused ? styles.labelFocused : styles.label}>
+          {label}
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 });
 
-const base = {
-  height: px(80),
-  paddingHorizontal: space.s32,
-  borderRadius: radius.pill,
-  borderWidth: focus.borderWidth,
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: space.s12,
-} as const;
-
 const styles = StyleSheet.create({
+  pill: {
+    height: px(80),
+    paddingHorizontal: space.s32 + focus.borderWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.s12,
+  },
+  // Fundo de repouso (6% de branco); some quando a camada de foco aparece.
   rest: {
-    ...base,
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radius.pill,
     backgroundColor: color.surfaceTile,
-    borderColor: 'transparent',
   },
-  focused: {
-    ...base,
-    backgroundColor: color.surfaceFocus,
+  restHidden: {opacity: 0},
+  layer: {
+    position: 'absolute',
+    top: -focus.borderWidth,
+    right: -focus.borderWidth,
+    bottom: -focus.borderWidth,
+    left: -focus.borderWidth,
+    borderRadius: radius.pill + focus.borderWidth,
+    borderWidth: focus.borderWidth,
     borderColor: color.focus,
-    transform: [{scale: focus.scale}],
+    backgroundColor: color.surfaceFocus,
   },
-  pressed: {transform: [{scale: focus.pressedScale}]},
   label: {...type.button, color: color.ink},
   labelFocused: {...type.button, color: color.focus},
 });
