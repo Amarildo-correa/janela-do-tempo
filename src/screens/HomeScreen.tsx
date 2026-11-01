@@ -163,6 +163,7 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
           items={forecast.hours}
           itemHeight={size.hourCardH}
           renderCard={renderHour}
+          active={activeRail === 'hours'}
           onSelect={onSelect}
         />
         <View style={styles.railGap} />
@@ -172,6 +173,7 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
           items={forecast.days}
           itemHeight={size.dayCardH}
           renderCard={renderDay}
+          active={activeRail === 'days'}
           hasPreferredFocus
           onSelect={onSelect}
         />

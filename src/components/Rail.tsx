@@ -15,6 +15,8 @@ type Props<T extends {key: string}> = {
   itemHeight: number;
   renderCard: (item: T, index: number) => React.ReactElement;
   hasPreferredFocus?: boolean;
+  // O rail tem o foco: só aqui o card selecionado cresce.
+  active: boolean;
   onSelect: (rail: RailId, index: number) => void;
 };
 
@@ -28,6 +30,7 @@ export function Rail<T extends {key: string}>({
   itemHeight,
   renderCard,
   hasPreferredFocus = false,
+  active,
   onSelect,
 }: Props<T>) {
   const dataAdapter = useMemo(
@@ -73,7 +76,7 @@ export function Rail<T extends {key: string}>({
         numOffsetItems={2}
         navigableScrollAreaMargin={space.safeX}
         containerStyle={containerStyle}
-        itemStyle={itemStyle}
+        itemStyle={active ? itemStyleActive : itemStyleIdle}
         animationDuration={animationDuration}
         selectionBorder={selectionBorder}
         onSelectionChanged={onSelectionChanged}
@@ -82,11 +85,15 @@ export function Rail<T extends {key: string}>({
   );
 }
 
-const itemStyle = {
+// Fora de foco o Carousel mantém o card selecionado na escala de seleção;
+// num rail sem foco ela volta a 1, e nada cresce além do card em foco.
+const itemStyleActive = {
   itemPadding: space.s20,
   selectedItemScaleFactor: focus.scale,
   pressedItemScaleFactor: focus.pressedScale,
 };
+
+const itemStyleIdle = {...itemStyleActive, selectedItemScaleFactor: 1};
 
 const animationDuration = {
   itemScrollDuration: focus.railScroll / 1000,
@@ -99,7 +106,11 @@ const selectionBorder = {
   borderWidth: focus.borderWidth,
   borderColor: color.focus,
   borderRadius: radius.tile + focus.borderWidth,
+  // O contorno interno do Carousel é preto e quase reto por padrão e aparece
+  // nos cantos mesmo com largura 0: transparente e com o raio da borda.
   borderStrokeWidth: 0,
+  borderStrokeColor: 'transparent',
+  borderStrokeRadius: radius.tile + focus.borderWidth,
 };
 
 const styles = StyleSheet.create({
