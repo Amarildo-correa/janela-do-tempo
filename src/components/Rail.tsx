@@ -6,7 +6,7 @@ import {
   CarouselSelectionChangeEvent,
 } from '@amazon-devices/vega-carousel';
 import {RailId} from '../focus';
-import {color, focus, px, radius, space, type} from '../theme';
+import {color, focus, radius, space, type} from '../theme';
 
 type Props<T extends {key: string}> = {
   id: RailId;
@@ -16,11 +16,7 @@ type Props<T extends {key: string}> = {
   renderCard: (item: T, index: number) => React.ReactElement;
   hasPreferredFocus?: boolean;
   onSelect: (rail: RailId, index: number) => void;
-  onFocusChange: (rail: RailId, focused: boolean) => void;
 };
-
-// Espaço acima e abaixo do card para a escala de foco e a borda outset.
-const FOCUS_ROOM = px(16);
 
 // Um rail de cards com o Vega Carousel (@amazon-devices/vega-carousel): ele
 // faz no nativo a navegação por D-pad, a rolagem sob foco fixo, a
@@ -33,7 +29,6 @@ export function Rail<T extends {key: string}>({
   renderCard,
   hasPreferredFocus = false,
   onSelect,
-  onFocusChange,
 }: Props<T>) {
   const dataAdapter = useMemo(
     () => ({
@@ -54,45 +49,35 @@ export function Rail<T extends {key: string}>({
     (event: CarouselSelectionChangeEvent) => onSelect(id, event.selectedIndex),
     [id, onSelect],
   );
-  const onFocus = useCallback(
-    () => onFocusChange(id, true),
-    [id, onFocusChange],
-  );
-  const onBlur = useCallback(
-    () => onFocusChange(id, false),
-    [id, onFocusChange],
-  );
 
   const containerStyle = useMemo(
-    () => [styles.carousel, {height: itemHeight + FOCUS_ROOM * 2}],
+    // Da altura do card: o item do Carousel estica até a altura do
+    // contêiner, e a borda de foco seguiria junto.
+    () => [styles.carousel, {height: itemHeight}],
     [itemHeight],
   );
 
   return (
     <View>
       <Text style={styles.title}>{title}</Text>
-      {/* Os eventos de foco do Carousel sobem até este View: é assim que o
-          app sabe qual rail está com o foco. */}
-      <View onFocus={onFocus} onBlur={onBlur}>
-        <Carousel
-          uniqueId={`rail-${id}`}
-          testID={`rail-${id}`}
-          dataAdapter={dataAdapter}
-          renderItem={renderItem}
-          orientation="horizontal"
-          selectionStrategy="pinned"
-          pinnedSelectedItemOffset="start"
-          hasPreferredFocus={hasPreferredFocus}
-          renderedItemsCount={11}
-          numOffsetItems={2}
-          navigableScrollAreaMargin={space.safeX}
-          containerStyle={containerStyle}
-          itemStyle={itemStyle}
-          animationDuration={animationDuration}
-          selectionBorder={selectionBorder}
-          onSelectionChanged={onSelectionChanged}
-        />
-      </View>
+      <Carousel
+        uniqueId={`rail-${id}`}
+        testID={`rail-${id}`}
+        dataAdapter={dataAdapter}
+        renderItem={renderItem}
+        orientation="horizontal"
+        selectionStrategy="pinned"
+        pinnedSelectedItemOffset="start"
+        hasPreferredFocus={hasPreferredFocus}
+        renderedItemsCount={11}
+        numOffsetItems={2}
+        navigableScrollAreaMargin={space.safeX}
+        containerStyle={containerStyle}
+        itemStyle={itemStyle}
+        animationDuration={animationDuration}
+        selectionBorder={selectionBorder}
+        onSelectionChanged={onSelectionChanged}
+      />
     </View>
   );
 }
@@ -122,8 +107,7 @@ const styles = StyleSheet.create({
     ...type.sectionTitle,
     color: color.ink,
     paddingHorizontal: space.safeX,
-    // 14 px até o card; o Carousel já reserva FOCUS_ROOM acima dele.
-    marginBottom: space.s14 - FOCUS_ROOM,
+    marginBottom: space.s14,
   },
   carousel: {width: '100%'},
 });

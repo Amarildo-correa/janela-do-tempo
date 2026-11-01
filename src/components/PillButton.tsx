@@ -10,6 +10,8 @@ type Props = {
   icon?: 'search';
   onPress: () => void;
   hasTVPreferredFocus?: boolean;
+  // Avisa quem precisa saber que o botão recebeu o foco.
+  onFocused?: () => void;
 };
 
 // Botão em pílula de 80 px. Pressable do React Native, como manda o guia de
@@ -17,11 +19,14 @@ type Props = {
 // 0.83). Em foco: fundo escuro, borda amarela, texto amarelo e ícone mais
 // grosso.
 export const PillButton = forwardRef<View, Props>(function PillButton(
-  {label, hint, icon, onPress, hasTVPreferredFocus},
+  {label, hint, icon, onPress, hasTVPreferredFocus, onFocused},
   ref,
 ) {
   const [focused, setFocused] = useState(false);
-  const onFocus = useCallback(() => setFocused(true), []);
+  const onFocus = useCallback(() => {
+    setFocused(true);
+    onFocused?.();
+  }, [onFocused]);
   const onBlur = useCallback(() => setFocused(false), []);
   const fg = focused ? color.focus : color.ink;
   // Encolhe enquanto o OK está apertado, como os cards do Vega Carousel.

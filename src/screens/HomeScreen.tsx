@@ -1,5 +1,6 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {useIsFocused} from '@amazon-devices/react-navigation__native';
 import {StackScreenProps} from '@amazon-devices/react-navigation__stack';
 import {DayCard} from '../components/DayCard';
 import {DetailList} from '../components/DetailList';
@@ -9,7 +10,12 @@ import {PillButton} from '../components/PillButton';
 import {Rail} from '../components/Rail';
 import {ScreenBackground} from '../components/ScreenBackground';
 import {Wordmark} from '../components/Wordmark';
-import {RailFocusProvider, RailId, useFocusRestore} from '../focus';
+import {
+  RailFocusProvider,
+  RailId,
+  useFocusRestore,
+  useRegionFocus,
+} from '../focus';
 import {useLaunchMetrics} from '../launch';
 import type {RootStackParamList} from '../navigation';
 import {color, px, size, space, type} from '../theme';
@@ -33,28 +39,19 @@ export function HomeScreen({navigation}: Props) {
     navigation.navigate('Search');
   }, [navigation, search]);
 
-  const header = (
-    <View style={styles.header}>
-      <Wordmark />
-      {state.status === 'ready' ? (
-        <PillButton
-          ref={search.ref}
-          label="Buscar cidade"
-          icon="search"
-          hint="Abre a busca de cidades"
-          onPress={openSearch}
-        />
-      ) : null}
-    </View>
-  );
-
   return (
     <ScreenBackground>
       {state.status === 'ready' ? (
-        <Weather forecast={state.forecast} header={header} />
+        <Weather
+          forecast={state.forecast}
+          searchRef={search.ref}
+          onOpenSearch={openSearch}
+        />
       ) : (
         <View style={styles.page}>
-          {header}
+          <View style={styles.header}>
+            <Wordmark />
+          </View>
           <View style={styles.message}>
             {state.status === 'loading' ? (
               <>
@@ -82,16 +79,26 @@ export function HomeScreen({navigation}: Props) {
   );
 }
 
-type WeatherProps = {forecast: Forecast; header: React.ReactNode};
+type WeatherProps = {
+  forecast: Forecast;
+  searchRef: React.RefObject<View | null>;
+  onOpenSearch: () => void;
+};
 
 // Tela com dados: hero e detalhes no topo, rails de horas e de dias embaixo.
-function Weather({forecast, header}: WeatherProps) {
+function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
-  const [activeRail, setActiveRail] = useState<RailId | null>('days');
   const [selected, setSelected] = useState<Record<RailId, number>>({
     hours: 0,
     days: 0,
   });
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+
+  // Faixa com o foco: começa em Próximos dias, como o foco inicial.
+  const {region, setRegion} = useRegionFocus('days', useIsFocused());
+  const activeRail: RailId | null = region === 'search' ? null : region;
+  const onSearchFocused = useCallback(() => setRegion('search'), [setRegion]);
 
   // Foco é seleção: o card que ganha foco passa a ser o assunto do hero.
   const onSelect = useCallback((rail: RailId, index: number) => {
@@ -103,17 +110,14 @@ function Weather({forecast, header}: WeatherProps) {
 
   // Ao entrar num rail, o hero passa para o card em que ele estava. Ao subir
   // para Buscar cidade, o hero mantém a última seleção.
-  const onFocusChange = useCallback(
-    (rail: RailId, focused: boolean) => {
-      if (focused) {
-        setActiveRail(rail);
-        setSelection({kind: KIND[rail], index: selected[rail]});
-      } else {
-        setActiveRail((current) => (current === rail ? null : current));
-      }
-    },
-    [selected],
-  );
+  useEffect(() => {
+    if (activeRail) {
+      setSelection({
+        kind: KIND[activeRail],
+        index: selectedRef.current[activeRail],
+      });
+    }
+  }, [activeRail]);
 
   const renderHour = useCallback(
     (item: Hour, index: number) => <HourCard item={item} index={index} />,
@@ -134,7 +138,17 @@ function Weather({forecast, header}: WeatherProps) {
       <View style={styles.page}>
         <View style={styles.top}>
           <View style={styles.topLeft}>
-            {header}
+            <View style={styles.header}>
+              <Wordmark />
+              <PillButton
+                ref={searchRef}
+                label="Buscar cidade"
+                icon="search"
+                hint="Abre a busca de cidades"
+                onPress={onOpenSearch}
+                onFocused={onSearchFocused}
+              />
+            </View>
             <HeroNow hero={hero} />
           </View>
           <View style={styles.topRight}>
@@ -150,7 +164,6 @@ function Weather({forecast, header}: WeatherProps) {
           itemHeight={size.hourCardH}
           renderCard={renderHour}
           onSelect={onSelect}
-          onFocusChange={onFocusChange}
         />
         <View style={styles.railGap} />
         <Rail
@@ -161,7 +174,6 @@ function Weather({forecast, header}: WeatherProps) {
           renderCard={renderDay}
           hasPreferredFocus
           onSelect={onSelect}
-          onFocusChange={onFocusChange}
         />
       </View>
     </RailFocusProvider>
@@ -189,8 +201,7 @@ const styles = StyleSheet.create({
   // Os rails vão até a borda direita da tela; o Carousel aplica a margem
   // segura à esquerda.
   rails: {marginTop: space.s36},
-  // 36 px entre os blocos, menos o espaço de foco que o Carousel já reserva.
-  railGap: {height: space.s36 - px(32)},
+  railGap: {height: space.s36},
   message: {
     marginTop: px(160),
     alignItems: 'flex-start',

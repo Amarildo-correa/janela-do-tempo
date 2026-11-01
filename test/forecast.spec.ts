@@ -2,6 +2,7 @@ import fixture from './fixtures/open-meteo.json';
 import {describe as describeCode} from '../src/weather/conditions';
 import {dayA11y, hourA11y, parseForecast} from '../src/weather/forecast';
 import {heroFor} from '../src/weather/selection';
+import {nextRegion} from '../src/focus/useRegionFocus';
 
 // Resposta real da Open-Meteo para Novo Hamburgo em 2026-11-01 às 15:30.
 const forecast = parseForecast(fixture);
@@ -67,5 +68,16 @@ describe('condições', () => {
     expect(describeCode(0, true)).toEqual({label: 'Ensolarado', icon: 'sun'});
     expect(describeCode(0, false)).toEqual({label: 'Céu limpo', icon: 'moon'});
     expect(describeCode(63, true).label).toBe('Chuva');
+  });
+});
+
+describe('nextRegion', () => {
+  it('↑ e ↓ andam entre Buscar cidade, horas e dias, sem passar das pontas', () => {
+    expect(nextRegion('days', 'up')).toBe('hours');
+    expect(nextRegion('hours', 'up')).toBe('search');
+    expect(nextRegion('search', 'up')).toBe('search');
+    expect(nextRegion('search', 'down')).toBe('hours');
+    expect(nextRegion('days', 'down')).toBe('days');
+    expect(nextRegion('hours', 'right')).toBe('hours');
   });
 });

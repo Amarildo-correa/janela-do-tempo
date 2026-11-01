@@ -2,6 +2,8 @@ import 'react-native';
 import {act, fireEvent, render, screen} from '@testing-library/react-native';
 import * as React from 'react';
 
+import {useTVEventHandler} from '@amazon-devices/react-native-kepler';
+
 import fixture from './fixtures/open-meteo.json';
 import {App} from '../src/App';
 
@@ -29,6 +31,13 @@ async function renderApp() {
   render(<App />);
   // Deixa a promessa do fetch resolver.
   await act(async () => {});
+}
+
+// Aperta uma tecla do controle: chama o último handler registrado no
+// useTVEventHandler (mock do react-native-kepler).
+function pressKey(eventType: string) {
+  const calls = (useTVEventHandler as jest.Mock).mock.calls;
+  act(() => calls[calls.length - 1][0]({eventType, eventKeyAction: 0}));
 }
 
 function finish() {
@@ -80,9 +89,16 @@ describe('App', () => {
     expect(screen.getByText('Segunda, 2 nov')).toBeTruthy();
     expect(screen.getByText('Máxima prevista')).toBeTruthy();
 
-    // Descer o foco para o rail de horas mostra a hora selecionada nele.
+    // Subir para o rail de horas mostra o card em que ele estava ("Agora")
+    // e passa o destaque amarelo para lá.
+    pressKey('up');
+    expect(
+      screen.getByLabelText('Agora em Novo Hamburgo, 27°, Sol entre nuvens'),
+    ).toBeTruthy();
+    expect(screen.getAllByTestId('icon-partly-sunny').length).toBe(1);
+    expect(screen.queryByTestId('icon-cloudy')).toBeNull();
+
     const hours = screen.getByTestId('rail-hours');
-    fireEvent(hours, 'focus');
     act(() =>
       hours.props.onSelectionChanged({
         selectedIndex: 1,
@@ -91,6 +107,11 @@ describe('App', () => {
     );
     expect(screen.getByText('Hoje às 16:00')).toBeTruthy();
     expect(screen.getByText('Previsão para 16:00')).toBeTruthy();
+
+    // Em Buscar cidade nenhum card fica amarelo e o hero não muda.
+    pressKey('up');
+    expect(screen.queryByTestId('icon-partly-sunny')).toBeNull();
+    expect(screen.getByText('Hoje às 16:00')).toBeTruthy();
     finish();
   });
 
