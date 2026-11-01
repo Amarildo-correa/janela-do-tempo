@@ -1,0 +1,9 @@
+{
+  "name": "janela-do-tempo-scripts",
+  "private": true,
+  "description": "Scripts auxiliares (geração do ícone, da tela de abertura e das imagens da loja).",
+  "type": "module",
+  "devDependencies": {
+    "sharp": "^0.35.5"
+  }
+}

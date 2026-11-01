@@ -1,0 +1,78 @@
+# Compila o app React Native for Vega e publica os .vpkg.
+# O Vega SDK só roda oficialmente em Ubuntu/macOS, por isso o build acontece
+# aqui e não no WSL.
+name: Vega build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - docs/**
+      - release/**
+  workflow_dispatch:
+
+env:
+  VEGA_SDK_VERSION: 2.0.13986
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Vega CLI e SDK
+        env:
+          NONINTERACTIVE: "true"
+          SKIP_VVD_INSTALL: "true"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq lz4
+          curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash
+          echo "$HOME/vega/bin" >> "$GITHUB_PATH"
+
+      # Alinha as versões @amazon-devices/* ao perfil do SDK (política de
+      # coerência do App Porting) e confere a linha RN 0.83.
+      - name: Dependências (vega project install --fix)
+        run: |
+          vega -v
+          npm install --legacy-peer-deps
+          vega project install --fix
+          npm install --legacy-peer-deps
+          vega project doctor --rn-version 0.83 | tee doctor.txt
+          if grep -Eiq "mismatched|out of set" doctor.txt; then
+            echo "::error::vega project doctor encontrou dependência fora da linha RN 0.83"
+            exit 1
+          fi
+
+      - name: Lint e testes
+        run: |
+          npx tsc --noEmit
+          npm run lint
+          npm test -- --ci
+
+      - name: Build de release
+        run: npm run build:release
+
+      - name: Listar e validar pacotes
+        run: |
+          find build -name "*.vpkg" -exec ls -la {} \;
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: janela-do-tempo-vpkg
+          path: build/*-release/*.vpkg
+
+      # package.json e lock depois do --fix, para trazer de volta ao repositório.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vega-resolved-deps
+          path: |
+            package.json
+            package-lock.json
+            doctor.txt

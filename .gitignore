@@ -1,0 +1,19 @@
+*.iml
+*.swp
+.idea
+.DS_Store
+.vscode
+.tmp
+
+dist
+build
+node_modules
+CMakeUserPresets.json
+npm-debug.log
+# Gerado pelo eslint-plugin-kepler
+generated
+# O CI resolve as dependências com `vega project install --fix`; um lock
+# gerado no WSL com legacy-peer-deps deixava plugins do ESLint aninhados.
+package-lock.json
+# Pacotes compilados ficam fora do git (artefatos do GitHub Actions).
+*.vpkg

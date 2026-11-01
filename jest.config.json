@@ -1,0 +1,47 @@
+{
+  "preset": "react-native",
+  "testRegex": "/test/.*\\.(test|spec)\\.(ts|tsx|js)$",
+  "moduleFileExtensions": [
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "json",
+    "node"
+  ],
+  "moduleNameMapper": {
+    "^@amazon-devices/react-native-kepler$": "<rootDir>/test/__mocks__/react-native-kepler.js",
+    "^@amazon-devices/vega-carousel$": "<rootDir>/test/__mocks__/vega-carousel.js",
+    "^@amazon-devices/react-native-vector-icons/(.*)$": "<rootDir>/test/__mocks__/vector-icons.js",
+    "^@amazon-devices/react-linear-gradient$": "<rootDir>/test/__mocks__/react-linear-gradient.js",
+    "^@amazon-devices/react-native-gesture-handler$": "react-native-gesture-handler",
+    "^@amazon-devices/react-native-safe-area-context$": "react-native-safe-area-context",
+    "^@amazon-devices/react-native-screens$": "react-native-screens",
+    "^@amazon-devices/react-navigation__native$": "@react-navigation/native",
+    "^@amazon-devices/react-navigation__stack$": "@react-navigation/stack",
+    "^~/(.*)$": "<rootDir>/src/$1"
+  },
+  "modulePaths": [
+    "<rootDir>/src"
+  ],
+  "roots": [
+    "<rootDir>/src/",
+    "<rootDir>/test/",
+    "<rootDir>/node_modules/"
+  ],
+  "transformIgnorePatterns": [
+    "node_modules/(?!((jest-)?react-native(-[a-z-]+)?|@react-native|@react-navigation|@amazon-devices)/)"
+  ],
+  "collectCoverage": false,
+  "collectCoverageFrom": [
+    "src/**/*",
+    "!**/index.{ts,js,tsx}",
+    "!**/types.ts",
+    "!src/**/*.d.ts"
+  ],
+  "coverageDirectory": ".tmp/coverage",
+  "setupFiles": [
+    "./node_modules/react-native-gesture-handler/jestSetup.js",
+    "<rootDir>/test/setup.js"
+  ]
+}

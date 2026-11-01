@@ -1,0 +1,5 @@
+{
+  "//": "O nome declarado precisa seguir este padrão para o runtime do Vega: <package id>.main",
+  "name": "com.janeladotempo.app.main",
+  "displayName": "Janela do Tempo"
+}

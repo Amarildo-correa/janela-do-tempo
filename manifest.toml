@@ -1,0 +1,32 @@
+schema-version = 1
+
+[package]
+title = "Janela do Tempo"
+version = "1.0.0"
+# Cada envio à Appstore precisa de um build-number maior.
+build-number = 1
+id = "com.janeladotempo.app"
+icon = "@image/app_icon.png"
+
+# Desde o SDK 2.0 o build gera o [[needs.module]] /com.amazon.vega.os@IVega_*
+# a partir destes valores; não declarar à mão.
+[os.version]
+min = "2.0"
+target = "2.0"
+
+[wants]
+# Previsão do tempo buscada na internet (Open-Meteo).
+[[wants.service]]
+id = "com.amazon.networking"
+
+# Sons de navegação nativos do Fire TV: o runtime toca os sons de foco, OK e
+# Voltar, mas só com acesso a este serviço.
+[[wants.service]]
+id = "com.amazon.audio.system"
+
+[components]
+[[components.interactive]]
+id = "com.janeladotempo.app.main"
+runtime-module = "/com.amazon.kepler.runtime.react_native_kepler_4@IReactNativeKepler_0"
+launch-type = "singleton"
+categories = ["com.amazon.category.main"]
