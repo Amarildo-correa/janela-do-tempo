@@ -1,4 +1,5 @@
 import React, {memo} from 'react';
+import {StyleProp, TextStyle} from 'react-native';
 import Ionicons from '@amazon-devices/react-native-vector-icons/Ionicons';
 import {IconKind} from '../weather/conditions';
 
@@ -20,6 +21,7 @@ type Props = {
   solid: boolean;
   size: number;
   color: string;
+  style?: StyleProp<TextStyle>;
 };
 
 export const WeatherIcon = memo(function WeatherIcon({
@@ -27,6 +29,7 @@ export const WeatherIcon = memo(function WeatherIcon({
   solid,
   size,
   color,
+  style,
 }: Props) {
   const name = solid ? NAMES[kind] : `${NAMES[kind]}-outline`;
   return (
@@ -34,6 +37,7 @@ export const WeatherIcon = memo(function WeatherIcon({
       name={name}
       size={size}
       color={color}
+      style={style}
       accessible={false}
       importantForAccessibility="no"
     />

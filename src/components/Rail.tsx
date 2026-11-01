@@ -6,7 +6,7 @@ import {
   CarouselSelectionChangeEvent,
 } from '@amazon-devices/vega-carousel';
 import {RailId} from '../focus';
-import {color, focus, radius, space, type} from '../theme';
+import {color, focus, space, type} from '../theme';
 
 type Props<T extends {key: string}> = {
   id: RailId;
@@ -15,14 +15,12 @@ type Props<T extends {key: string}> = {
   itemHeight: number;
   renderCard: (item: T, index: number) => React.ReactElement;
   hasPreferredFocus?: boolean;
-  // O rail tem o foco: só aqui o card selecionado cresce.
-  active: boolean;
   onSelect: (rail: RailId, index: number) => void;
 };
 
 // Um rail de cards com o Vega Carousel (@amazon-devices/vega-carousel): ele
-// faz no nativo a navegação por D-pad, a rolagem sob foco fixo, a
-// reciclagem, a borda amarela, a escala de foco e a de toque.
+// faz no nativo a navegação por D-pad, a rolagem sob foco fixo e a
+// reciclagem.
 export function Rail<T extends {key: string}>({
   id,
   title,
@@ -30,7 +28,6 @@ export function Rail<T extends {key: string}>({
   itemHeight,
   renderCard,
   hasPreferredFocus = false,
-  active,
   onSelect,
 }: Props<T>) {
   const dataAdapter = useMemo(
@@ -54,9 +51,8 @@ export function Rail<T extends {key: string}>({
   );
 
   const containerStyle = useMemo(
-    // Da altura do card: o item do Carousel estica até a altura do
-    // contêiner, e a borda de foco seguiria junto.
-    () => [styles.carousel, {height: itemHeight}],
+    // O item do Carousel estica até a altura do contêiner: card + folga.
+    () => [styles.carousel, {height: itemHeight + focus.room * 2}],
     [itemHeight],
   );
 
@@ -74,43 +70,28 @@ export function Rail<T extends {key: string}>({
         hasPreferredFocus={hasPreferredFocus}
         renderedItemsCount={11}
         numOffsetItems={2}
-        navigableScrollAreaMargin={space.safeX}
+        navigableScrollAreaMargin={space.safeX - focus.room}
         containerStyle={containerStyle}
-        itemStyle={active ? itemStyleActive : itemStyleIdle}
+        itemStyle={itemStyle}
         animationDuration={animationDuration}
-        selectionBorder={selectionBorder}
         onSelectionChanged={onSelectionChanged}
       />
     </View>
   );
 }
 
-// Fora de foco o Carousel mantém o card selecionado na escala de seleção;
-// num rail sem foco ela volta a 1, e nada cresce além do card em foco.
-const itemStyleActive = {
-  itemPadding: space.s20,
-  selectedItemScaleFactor: focus.scale,
-  pressedItemScaleFactor: focus.pressedScale,
+// O card desenha a própria camada de foco e o toque (FocusCard), a partir
+// do centro; o Carousel não escala nem desenha borda. O vão visível entre os
+// cards é de 32 px: o item tem focus.room de folga de cada lado.
+const itemStyle = {
+  itemPadding: space.s32 - focus.room * 2,
+  selectedItemScaleFactor: 1,
+  pressedItemScaleFactor: 1,
 };
-
-const itemStyleIdle = {...itemStyleActive, selectedItemScaleFactor: 1};
 
 const animationDuration = {
   itemScrollDuration: focus.railScroll / 1000,
   itemPressedDuration: 0.12,
-  containerSelectionChangeDuration: focus.duration / 1000,
-};
-
-const selectionBorder = {
-  borderStrategy: 'outset' as const,
-  borderWidth: focus.borderWidth,
-  borderColor: color.focus,
-  borderRadius: radius.tile + focus.borderWidth,
-  // O contorno interno do Carousel é preto e quase reto por padrão e aparece
-  // nos cantos mesmo com largura 0: transparente e com o raio da borda.
-  borderStrokeWidth: 0,
-  borderStrokeColor: 'transparent',
-  borderStrokeRadius: radius.tile + focus.borderWidth,
 };
 
 const styles = StyleSheet.create({
@@ -118,7 +99,8 @@ const styles = StyleSheet.create({
     ...type.sectionTitle,
     color: color.ink,
     paddingHorizontal: space.safeX,
-    marginBottom: space.s14,
+    // 14 px até o card; a folga do item já fica entre os dois.
+    marginBottom: space.s14 - focus.room,
   },
   carousel: {width: '100%'},
 });

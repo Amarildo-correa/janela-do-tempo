@@ -2,8 +2,6 @@ import 'react-native';
 import {act, fireEvent, render, screen} from '@testing-library/react-native';
 import * as React from 'react';
 
-import {useTVEventHandler} from '@amazon-devices/react-native-kepler';
-
 import fixture from './fixtures/open-meteo.json';
 import {App} from '../src/App';
 
@@ -33,11 +31,10 @@ async function renderApp() {
   await act(async () => {});
 }
 
-// Aperta uma tecla do controle: chama o último handler registrado no
-// useTVEventHandler (mock do react-native-kepler).
-function pressKey(eventType: string) {
-  const calls = (useTVEventHandler as jest.Mock).mock.calls;
-  act(() => calls[calls.length - 1][0]({eventType, eventKeyAction: 0}));
+// Aperta uma tecla do controle (eventos de tecla do mock do kepler).
+function pressKey(eventType: string, eventKeyAction = 0) {
+  const kepler = require('@amazon-devices/react-native-kepler');
+  act(() => kepler.__emitTVEvent({eventType, eventKeyAction}));
 }
 
 function finish() {

@@ -128,5 +128,9 @@ export const focus = {
   // Escala enquanto o OK está apertado (cards e botões).
   pressedScale: 0.94,
   duration: 160, // ms
+  pressDuration: 120, // ms
+  // Folga em volta de cada card do rail para a camada de foco crescer
+  // (escala 1.06 + anel de 4 px por fora) sem cobrir os vizinhos.
+  room: px(12),
   railScroll: 240, // ms
 } as const;

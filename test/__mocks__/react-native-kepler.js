@@ -6,11 +6,26 @@ const {View} = require('react-native');
 
 const store = new Map();
 
+// Handlers de tecla montados (useTVEventHandler). Os testes apertam teclas
+// com __emitTVEvent, que chega a todos, como no aparelho.
+const tvHandlers = new Set();
+
+function useTVEventHandler(handler) {
+  const ref = React.useRef(handler);
+  ref.current = handler;
+  React.useEffect(() => {
+    const listener = (event) => ref.current(event);
+    tvHandlers.add(listener);
+    return () => tvHandlers.delete(listener);
+  }, []);
+}
+
 module.exports = {
   TVFocusGuideView: React.forwardRef((props, ref) =>
     React.createElement(View, {...props, ref}),
   ),
-  useTVEventHandler: jest.fn(),
+  useTVEventHandler,
+  __emitTVEvent: (event) => tvHandlers.forEach((listener) => listener(event)),
   FocusManager: {focus: jest.fn()},
   // O AsyncStorage do Vega grava num banco nativo; aqui fica em memória.
   AsyncStorage: {

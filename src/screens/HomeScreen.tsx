@@ -15,10 +15,11 @@ import {
   RailId,
   useFocusRestore,
   useRegionFocus,
+  useSelectPressed,
 } from '../focus';
 import {useLaunchMetrics} from '../launch';
 import type {RootStackParamList} from '../navigation';
-import {color, px, size, space, type} from '../theme';
+import {color, focus, px, size, space, type} from '../theme';
 import {Day, Forecast, Hour} from '../weather/forecast';
 import {heroFor, INITIAL_SELECTION, Selection} from '../weather/selection';
 import {useForecast} from '../weather/useForecast';
@@ -105,9 +106,11 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   selectedRef.current = selected;
 
   // Faixa com o foco: começa em Próximos dias, como o foco inicial.
-  const {region, setRegion} = useRegionFocus('days', useIsFocused());
+  const isFocused = useIsFocused();
+  const {region, setRegion} = useRegionFocus('days', isFocused);
   const activeRail: RailId | null = region === 'search' ? null : region;
   const onSearchFocused = useCallback(() => setRegion('search'), [setRegion]);
+  const pressed = useSelectPressed(isFocused && activeRail != null);
 
   // Foco é seleção: o card que ganha foco passa a ser o assunto do hero.
   const onSelect = useCallback((rail: RailId, index: number) => {
@@ -143,7 +146,10 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
   );
 
   return (
-    <RailFocusProvider activeRail={activeRail} selected={selected}>
+    <RailFocusProvider
+      activeRail={activeRail}
+      selected={selected}
+      pressed={pressed}>
       <View style={styles.page}>
         <View style={styles.top}>
           <View style={styles.topLeft}>
@@ -172,7 +178,6 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
           items={forecast.hours}
           itemHeight={size.hourCardH}
           renderCard={renderHour}
-          active={activeRail === 'hours'}
           onSelect={onSelect}
         />
         <View style={styles.railGap} />
@@ -182,7 +187,6 @@ function Weather({forecast, searchRef, onOpenSearch}: WeatherProps) {
           items={forecast.days}
           itemHeight={size.dayCardH}
           renderCard={renderDay}
-          active={activeRail === 'days'}
           hasPreferredFocus={firstVisit}
           onSelect={onSelect}
         />
@@ -212,7 +216,8 @@ const styles = StyleSheet.create({
   // Os rails vão até a borda direita da tela; o Carousel aplica a margem
   // segura à esquerda.
   rails: {marginTop: space.s36},
-  railGap: {height: space.s36},
+  // 36 px entre os blocos, menos a folga dos itens do Carousel.
+  railGap: {height: space.s36 - focus.room * 2},
   message: {
     marginTop: px(160),
     alignItems: 'flex-start',
