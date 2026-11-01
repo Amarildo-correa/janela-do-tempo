@@ -12,12 +12,13 @@ The general procedure (container, developer mode, CI, code rules, pitfalls) is i
 
 ## State of the repo
 
-Only the tooling is in place: `package.json` (dependencies already aligned to SDK 2.0 / RN 0.83 by `vega project install --fix`), ESLint, Prettier, Babel, Metro, TypeScript, Jest config and mocks, CI workflow. **The app itself still has to be created**: `manifest.toml`, `app.json`, `index.js`, `src/App.tsx` and the rest of `src/`, `assets/` (icon, splash), and tests under `test/`. Until then `tsc`, lint and Jest fail for lack of inputs.
+The app exists and runs on the Fire Stick: package id `com.janeladotempo.app` (`app.json` name, `AppRegistry` name and the `manifest.toml` interactive component id are `com.janeladotempo.app.main`). One Home screen with the forecast for Novo Hamburgo (Open-Meteo, no key) and a Search screen that only says "Em desenvolvimento".
 
-When creating it:
-- Pick the package id (e.g. `com.janeladotempo.app`). `app.json` `name`, the `AppRegistry` name and the `manifest.toml` interactive component id must all be `<package id>.main`.
-- `manifest.toml`: `[os.version]` min/target `2.0`; `runtime-module = "/com.amazon.kepler.runtime.react_native_kepler_4@IReactNativeKepler_0"` (don't hand-edit afterwards); don't add `[[needs.module]] /com.amazon.vega.os@IVega_*` (the build generates it). Add `[[wants.service]] id = "com.amazon.audio.system"` so the runtime plays the native Fire TV focus/OK/Back sounds, and `com.amazon.inputmethod.service` if there is a text field.
-- `package.json` `name`/`kepler.appName` were set to `@amazon-devices/janeladotempo` / `JanelaDoTempo`; adjust if the app gets another name.
+- Visual identity comes from the user's Design System artifact "Janela do Tempo" (README, VEGA.md, tokens.json); all values live in `src/theme.ts`.
+- The user wants **only ready-made Amazon components**, nothing hand-rolled: Vega Carousel (`@amazon-devices/vega-carousel`) for the rails, `TVFocusGuideView`/`FocusManager`/`useTVEventHandler` from react-native-kepler, Ionicons from `@amazon-devices/react-native-vector-icons`, `@amazon-devices/react-linear-gradient` for the background. kepler-ui-components 3.x Button/Card/Typography are deprecated on RN 0.83; card contents and the button are RN `Pressable`/`Text`/`View`, as Amazon's migration guide says.
+- Vega Carousel facts learned on the device: it does not emit onFocus/onBlur to JS (not even to a wrapping View), so the focused rail is tracked from ↑/↓ keys (`src/focus/useRegionFocus.ts`); its item stretches to the container height (keep `containerStyle.height` = card height); the selection border's inner stroke is black by default and shows in the corners (`borderStrokeColor: 'transparent'`); `hasPreferredFocus` re-grabs focus when the screen comes back, so it is only on for the first visit.
+- Fonts: Roboto SemiBold/Bold/ExtraBold and Ionicons in `assets/fonts/` (file name = fontFamily). Icon, splash and store images come from `scripts/make-assets.mjs` (`cd scripts && npm install && node make-assets.mjs`; needs Roboto installed in `~/.local/share/fonts`).
+- `package.json` `name`/`kepler.appName` are `@amazon-devices/janeladotempo` / `JanelaDoTempo`.
 
 ## Commands
 
@@ -40,8 +41,8 @@ npx jest test/App.spec.tsx                          # single test file
   docker exec vega-sdk-dl bash -c 'export PATH=/root/vega/node22/bin:/root/vega/bin:$PATH; cd /root/work/janela-do-tempo && npm install --legacy-peer-deps && vega project doctor --rn-version 0.83 && npm run build:release'
   docker exec vega-sdk-dl bash -c 'ls /root/work/janela-do-tempo/build/armv7-release/'   # then docker cp the .vpkg out
   ```
-- **Install on the physical Fire Stick** (developer mode already enabled, IP 192.168.1.2):
-  `~/.claude/skills/vega-os-windows/scripts/vega-device.sh 192.168.1.2 <file.vpkg> <package id>`
+- **Install on the physical Fire Stick** (developer mode already enabled; IP 192.168.1.3 since 2026-11-01, it changes when the router restarts — find it by scanning port 5555 on 192.168.1.0/24 from the container):
+  `~/.claude/skills/vega-os-windows/scripts/vega-device.sh 192.168.1.3 <file.vpkg> com.janeladotempo.app`
   Remote keys may still go to the Fire TV launcher afterwards: relaunch on the device with `vlcm launch-app orpheus://<package id>.main` before sending keys.
 - **See / drive / debug the TV** (`~/.claude/skills/vega-os-windows/scripts/vega-tv.sh`): `shot /tmp/tv.png` (1920×1080 screenshot to read), `key KEY_RIGHT KEY_ENTER KEY_BACK` (remote buttons), `logs <package id>` / `follow <package id>` (app logs). Works while the TV shows another input. A 0-byte/black shot usually means another app with DRM video (Fire TV launcher, Netflix) is in front: check `vlcm list` on the device.
 
